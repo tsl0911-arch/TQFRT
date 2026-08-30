@@ -1,0 +1,1121 @@
+<title>티쿤 운임 계산기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-alt: #F1F4F2;
+    --border: #D3DCD8;
+    --ink: #16211F;
+    --ink-muted: #57665F;
+    --accent-air: #B96A15;
+    --accent-air-strong: #8F4F0E;
+    --accent-air-soft: #F5E3C4;
+    --accent-sea: #146B72;
+    --accent-sea-soft: #D7EEEC;
+    --good: #1F7A48;
+    --good-soft: #DCEFE2;
+    --danger: #B03A2E;
+    --danger-soft: #F6DEDA;
+    --shadow: 0 1px 2px rgba(22,33,31,0.06), 0 8px 24px -12px rgba(22,33,31,0.18);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1614;
+      --surface: #16211F;
+      --surface-alt: #1C2926;
+      --border: #2B3A36;
+      --ink: #E9F1EE;
+      --ink-muted: #9FB6AE;
+      --accent-air: #E8A94D;
+      --accent-air-strong: #F3C27C;
+      --accent-air-soft: rgba(232,169,77,0.16);
+      --accent-sea: #4FBDB5;
+      --accent-sea-soft: rgba(79,189,181,0.16);
+      --good: #5FC384;
+      --good-soft: rgba(95,195,132,0.16);
+      --danger: #E2786A;
+      --danger-soft: rgba(226,120,106,0.16);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1614;
+    --surface: #16211F;
+    --surface-alt: #1C2926;
+    --border: #2B3A36;
+    --ink: #E9F1EE;
+    --ink-muted: #9FB6AE;
+    --accent-air: #E8A94D;
+    --accent-air-strong: #F3C27C;
+    --accent-air-soft: rgba(232,169,77,0.16);
+    --accent-sea: #4FBDB5;
+    --accent-sea-soft: rgba(79,189,181,0.16);
+    --good: #5FC384;
+    --good-soft: rgba(95,195,132,0.16);
+    --danger: #E2786A;
+    --danger-soft: rgba(226,120,106,0.16);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  header.page {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-sea);
+    font-weight: 600;
+  }
+  h1 {
+    font-family: "Gowun Batang", serif;
+    font-size: clamp(26px, 4vw, 34px);
+    margin: 0;
+    text-wrap: balance;
+    font-weight: 700;
+  }
+  .sub {
+    color: var(--ink-muted);
+    font-size: 14.5px;
+    white-space: nowrap;
+  }
+  @media (max-width: 640px) {
+    .sub { white-space: normal; }
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ---- input panel ---- */
+  .panel { padding: 22px 22px 24px; position: sticky; top: 20px; }
+  .panel h2 {
+    font-size: 15px;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  .panel .hint {
+    color: var(--ink-muted);
+    font-size: 12.5px;
+    margin: 0 0 18px;
+  }
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0 0 20px;
+  }
+  legend {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    letter-spacing: 0.03em;
+    padding: 0 0 8px;
+  }
+  .dims {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .field label { font-size: 12.5px; color: var(--ink-muted); }
+  .field .unit-label { font-size: 11px; color: var(--ink-muted); }
+  input[type="number"], input.fmt-number {
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 14.5px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--ink);
+    width: 100%;
+  }
+  input[type="number"]:focus-visible, input.fmt-number:focus-visible {
+    outline: 2px solid var(--accent-sea);
+    outline-offset: 1px;
+  }
+  .rate-field { position: relative; }
+  .rate-field .note {
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    margin-top: 3px;
+  }
+  .size-readout {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    background: var(--surface-alt);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: -4px;
+  }
+  .size-readout b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  button.reset {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.reset:hover { border-color: var(--accent-sea); color: var(--accent-sea); }
+
+  /* ---- results ---- */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 640px) {
+    .results-grid { grid-template-columns: 1fr; }
+  }
+  .result-card {
+    padding: 20px 20px 18px;
+    position: relative;
+    border-width: 1px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .result-card { transition: none; }
+  }
+  .result-card.mode-air { --mode: var(--accent-air); --mode-soft: var(--accent-air-soft); }
+  .result-card.mode-sea { --mode: var(--accent-sea); --mode-soft: var(--accent-sea-soft); }
+  .result-card.winner { border-color: var(--mode); box-shadow: var(--shadow), 0 0 0 1px var(--mode) inset; }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .result-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+  .swatch { width: 9px; height: 9px; border-radius: 50%; background: var(--mode); flex-shrink: 0; }
+  .badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--good);
+    background: var(--good-soft);
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+  .result-total {
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 10px 0 2px;
+    color: var(--mode);
+  }
+  .result-krw {
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 14px;
+  }
+  .breakdown { display: flex; flex-direction: column; gap: 6px; }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12.5px;
+    padding: 6px 0;
+    border-top: 1px solid var(--border);
+  }
+  .breakdown-row .label { color: var(--ink-muted); }
+  .breakdown-row .label .tag {
+    display: block;
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    opacity: 0.85;
+  }
+  .breakdown-row .val {
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .diff-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .diff-strip .diff-label { font-size: 13px; color: var(--ink-muted); }
+  .diff-strip .diff-val {
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .warn-note {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    margin-bottom: 18px;
+  }
+  .warn-note.show { display: flex; }
+
+  /* ---- reference tables ---- */
+  details.ref {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-top: 8px;
+  }
+  details.ref + details.ref { margin-top: 12px; }
+  details.ref summary {
+    cursor: pointer;
+    padding: 16px 20px;
+    font-weight: 600;
+    font-size: 13.5px;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  details.ref summary::-webkit-details-marker { display: none; }
+  details.ref summary::after {
+    content: "펼치기";
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+  details.ref[open] summary::after { content: "접기"; }
+  .ref-body { padding: 0 20px 20px; }
+  .ref-body p.desc { color: var(--ink-muted); font-size: 12px; margin: 0 0 12px; }
+  .table-scroll { overflow-x: auto; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12.5px;
+  }
+  table.compact { max-width: 520px; }
+  th, td {
+    text-align: right;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  th { text-align: right; color: var(--ink-muted); font-weight: 600; font-family: "Noto Sans KR", sans-serif; }
+  td:first-child, th:first-child { text-align: left; font-family: "Noto Sans KR", sans-serif; }
+  tr.current td { color: var(--accent-sea); font-weight: 600; }
+  tr.current td:first-child::before { content: "● "; }
+
+  .airtable-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .airtable-cell {
+    background: var(--surface);
+    padding: 6px 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 11.5px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .airtable-cell .kg { color: var(--ink-muted); }
+  .airtable-cell.editing input { width: 100%; }
+
+  /* ---- table editing ---- */
+  .table-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .table-toolbar .spacer { flex: 1 1 auto; }
+  .table-toolbar .scalar-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .tbl-btn {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tbl-btn:hover { border-color: var(--accent-sea); color: var(--accent-sea); }
+  .tbl-btn.primary { background: var(--accent-sea); border-color: var(--accent-sea); color: #fff; }
+  .tbl-btn.primary:hover { opacity: 0.9; color: #fff; }
+  .tbl-btn.danger { color: var(--danger); }
+  .tbl-btn.danger:hover { border-color: var(--danger); }
+  input.cell-input {
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    padding: 5px 7px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--ink);
+    width: 100%;
+    text-align: right;
+  }
+  input.cell-input.text { font-family: "Noto Sans KR", sans-serif; text-align: left; }
+  td.edit-cell { padding: 4px 6px; }
+  button.row-del {
+    font-family: inherit;
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 4px 6px;
+  }
+  button.row-del:hover { opacity: 0.7; }
+  .save-msg {
+    font-size: 11.5px;
+    color: var(--danger);
+    margin-bottom: 10px;
+  }
+
+  footer.page {
+    margin-top: 40px;
+    color: var(--ink-muted);
+    font-size: 11.5px;
+    line-height: 1.7;
+  }
+</style>
+
+<div class="wrap">
+  <header class="page">
+    <div class="eyebrow">TQOON LOGISTICS</div>
+    <h1>항공·선박 운임 계산기</h1>
+    <p class="sub">박스 크기와 무게를 입력하면 티쿤 물류센터 → 고객(동경기준)까지 항공 운임과 선박 운임이 자동 계산됩니다.</p>
+  </header>
+
+  <div class="layout">
+    <!-- INPUT PANEL -->
+    <div class="card panel">
+      <h2>박스 정보 입력</h2>
+      <p class="hint">값을 바꾸면 오른쪽 결과가 바로 갱신됩니다.</p>
+
+      <fieldset>
+        <legend>박스 사이즈 (cm)</legend>
+        <div class="dims">
+          <div class="field">
+            <label for="w">가로</label>
+            <input type="number" id="w" min="0" step="0.1" value="40">
+          </div>
+          <div class="field">
+            <label for="d">세로</label>
+            <input type="number" id="d" min="0" step="0.1" value="40">
+          </div>
+          <div class="field">
+            <label for="h">높이</label>
+            <input type="number" id="h" min="0" step="0.1" value="40">
+          </div>
+        </div>
+        <div class="size-readout" id="sizeReadout">사이즈 합계 —</div>
+      </fieldset>
+
+      <fieldset>
+        <legend>무게</legend>
+        <div class="field">
+          <label for="weight">실무게 (kg)</label>
+          <input type="number" id="weight" min="0" step="0.1" value="14">
+        </div>
+        <div class="size-readout" id="volWeightReadout">적용 부피무게 — (CEILING(부피무게, 0.5))</div>
+      </fieldset>
+
+      <fieldset>
+        <legend>요율 설정 · 최신 이력값 자동 적용</legend>
+        <div class="field rate-field">
+          <label for="fx">적용환율 (원/엔)</label>
+          <input type="number" id="fx" min="0.01" step="0.1" value="9">
+        </div>
+        <div class="field rate-field">
+          <label for="fuel">유류 할증료 (엔/kg)</label>
+          <input type="number" id="fuel" min="0" step="1" value="220">
+          <span class="note" id="fuelNote">최신 이력 기준</span>
+        </div>
+        <div class="field rate-field">
+          <label for="seaRate">선박 운임율 (원/CBM)</label>
+          <input type="text" inputmode="numeric" class="fmt-number" id="seaRate" value="375,500">
+          <span class="note" id="seaNote">최신 이력 기준</span>
+        </div>
+      </fieldset>
+
+      <button class="reset" id="resetBtn" type="button">예시 값으로 초기화</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="warn-note" id="deliveryWarn">
+        <span>⚠</span>
+        <span>실무게가 배송료 구간표의 최대 제한중량(180kg)을 초과합니다. 당일배송료는 최고 구간 요금으로 계산되었으니 실제 이용 전 확인이 필요합니다.</span>
+      </div>
+
+      <div class="results-grid">
+        <div class="card result-card mode-air" id="airCard">
+          <div class="result-head">
+            <div class="result-title"><span class="swatch"></span>항공 운임</div>
+            <span class="badge" id="airBadge" style="display:none;">최저가</span>
+          </div>
+          <div class="result-total" id="airTotal">¥0</div>
+          <div class="result-krw" id="airKrw">≈ ₩0 (환산)</div>
+          <div class="breakdown">
+            <div class="breakdown-row">
+              <span class="label">항공 운임 (표1)<span class="tag" id="airWeightTag">적용무게 —kg</span></span>
+              <span class="val" id="airBase">¥0</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">유류 할증료<span class="tag" id="airFuelTag">부피무게 반올림 —kg × ¥—</span></span>
+              <span class="val" id="airFuel">¥0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card result-card mode-sea" id="seaCard">
+          <div class="result-head">
+            <div class="result-title"><span class="swatch"></span>선박 운임</div>
+            <span class="badge" id="seaBadge" style="display:none;">최저가</span>
+          </div>
+          <div class="result-total" id="seaTotal">¥0</div>
+          <div class="result-krw" id="seaKrw">≈ ₩0 (환산)</div>
+          <div class="breakdown">
+            <div class="breakdown-row">
+              <span class="label">선박 운임 (표3)<span class="tag" id="seaBaseTag">CBM — × 단가 ÷ 환율</span></span>
+              <span class="val" id="seaBase">¥0</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">일내 배송료 (동경기준)<span class="tag" id="seaDeliveryTag">구간 —</span></span>
+              <span class="val" id="seaDelivery">¥0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card diff-strip">
+        <span class="diff-label">운임 차이 (|항공 − 선박|)</span>
+        <span class="diff-val" id="diffVal">¥0</span>
+      </div>
+
+      <!-- REFERENCE TABLES -->
+      <details class="ref">
+        <summary>표1 · 항공 운임표 (0.5kg 단위, 물류센터 → 고객)</summary>
+        <div class="ref-body">
+          <p class="desc">항공적용무게(=실무게와 부피무게 반올림 중 큰 값)를 0.5kg 단위로 올림하여 조회합니다. 이 브라우저에서 수정한 값은 이 기기에만 저장되며 다른 사람에게는 공유되지 않습니다.</p>
+          <div class="table-toolbar" id="airToolbar"></div>
+          <div class="save-msg" id="airMsg"></div>
+          <div class="airtable-grid" id="airTableGrid"></div>
+        </div>
+      </details>
+
+      <details class="ref">
+        <summary>표2 · 유류 할증료 변동 이력</summary>
+        <div class="ref-body">
+          <p class="desc">가장 최근 날짜 값이 기본값으로 적용됩니다. 이 브라우저에서 수정한 값은 이 기기에만 저장됩니다.</p>
+          <div class="table-toolbar" id="fuelToolbar"></div>
+          <div class="save-msg" id="fuelMsg"></div>
+          <div class="table-scroll">
+            <table class="compact" id="fuelHistoryTable">
+              <thead><tr><th>적용일</th><th>엔/kg</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="ref">
+        <summary>표3 · 선박 운임율 변동 이력 (물류센터 → 오사카)</summary>
+        <div class="ref-body">
+          <p class="desc">가장 최근 날짜 값이 기본값으로 적용됩니다. 이 브라우저에서 수정한 값은 이 기기에만 저장됩니다.</p>
+          <div class="table-toolbar" id="seaHistToolbar"></div>
+          <div class="save-msg" id="seaHistMsg"></div>
+          <div class="table-scroll">
+            <table class="compact" id="seaHistoryTable">
+              <thead><tr><th>적용일</th><th>원/CBM</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="ref">
+        <summary>일내 배송료 구간표 (동경 기준)</summary>
+        <div class="ref-body">
+          <p class="desc">사이즈 = 가로+세로+높이(cm). 사이즈 구간과 무게 구간 중 더 높은(비싼) 구간의 요금이 적용됩니다. 구간별 제한중량 초과 시 제한중량 기준 요금이 적용됩니다. 이 브라우저에서 수정한 값은 이 기기에만 저장됩니다.</p>
+          <div class="table-toolbar" id="deliveryToolbar"></div>
+          <div class="save-msg" id="deliveryMsg"></div>
+          <div class="table-scroll">
+            <table id="deliveryTable">
+              <thead><tr><th>사이즈 하한(cm)</th><th>사이즈 라벨</th><th>제한중량(kg)</th><th>배송료(엔)</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <footer class="page">
+    ※ 표1, 표2, 표3 및 일내 배송료는 변동될 수 있으므로 확인하시기 바랍니다.
+  </footer>
+</div>
+
+<script>
+(function () {
+  // ---- default reference data (from 운임계산_AI.xlsx) ----
+  var DEFAULT_AIR_RATE_TABLE = [
+    [0.5,580],[1,690],[1.5,800],[2,910],[2.5,1110],[3,1210],[3.5,1330],[4,1430],
+    [4.5,1530],[5,1630],[5.5,1830],[6,1930],[6.5,2030],[7,2130],[7.5,2230],[8,2330],
+    [8.5,2430],[9,2530],[9.5,2630],[10,2730],[10.5,3060],[11,3160],[11.5,3260],[12,3360],
+    [12.5,3460],[13,3560],[13.5,3660],[14,3760],[14.5,3860],[15,3960],[15.5,4060],[16,4160],
+    [16.5,4260],[17,4360],[17.5,4460],[18,4560],[18.5,4660],[19,4760],[19.5,4860],[20,4960],
+    [20.5,5250],[21,5350],[21.5,5450],[22,5550],[22.5,5650],[23,5750],[23.5,5850],[24,5950],
+    [24.5,6050],[25,6150],[25.5,6250],[26,6350],[26.5,6450],[27,6550],[27.5,6650],[28,6750],
+    [28.5,6850],[29,6950],[29.5,7050],[30,7150]
+  ];
+  var DEFAULT_OVER30_PER_KG = 250;
+
+  var DEFAULT_FUEL_HISTORY = [
+    ["2025-01-01",137],["2025-01-16",131],["2025-02-16",145],["2025-03-16",138],
+    ["2025-04-16",132],["2025-05-16",126],["2025-06-16",115],["2025-07-16",129],
+    ["2025-09-16",128],["2025-11-16",129],["2025-12-16",142],["2026-01-16",129],
+    ["2026-02-16",122],["2026-03-16",135],["2026-04-16",301],["2026-05-16",311],
+    ["2026-06-16",235],["2026-07-16",188],["2026-08-16",220]
+  ];
+
+  var DEFAULT_SEA_HISTORY = [
+    ["2025-01-01",350000],["2026-03-20",360500],["2026-08-12",375500]
+  ];
+
+  var DEFAULT_DELIVERY_TABLE = [
+    {label:"1~60",   min:1,   limit:2,   fee:371},
+    {label:"61~80",  min:61,  limit:5,   fee:435},
+    {label:"81~100", min:81,  limit:10,  fee:541},
+    {label:"101~140",min:101, limit:20,  fee:753},
+    {label:"141~160",min:141, limit:30,  fee:965},
+    {label:"161~170",min:161, limit:50,  fee:1389},
+    {label:"171~180",min:171, limit:60,  fee:1601},
+    {label:"181~200",min:181, limit:80,  fee:2025},
+    {label:"201~220",min:201, limit:100, fee:2449},
+    {label:"221~240",min:221, limit:140, fee:3297},
+    {label:"241~260",min:241, limit:180, fee:4145}
+  ];
+
+  var fmtYen = new Intl.NumberFormat("ja-JP");
+  var fmtWon = new Intl.NumberFormat("ko-KR");
+
+  function el(id) { return document.getElementById(id); }
+  function num(id) {
+    var v = parseFloat(String(el(id).value).replace(/,/g, ""));
+    return isFinite(v) ? v : NaN;
+  }
+  function ceilHalf(x) { return Math.ceil(x * 2) / 2; }
+  function fmtHalf(x) { return (x % 1 === 0) ? String(x) : x.toFixed(1); }
+  function digitsOnly(str) { return String(str || "").replace(/[^\d]/g, ""); }
+  function formatThousands(n) {
+    if (n === "" || n === null || n === undefined || !isFinite(n)) return "";
+    return Number(n).toLocaleString("en-US");
+  }
+
+  function latest(history) { return history[history.length - 1]; }
+  function clone(x) { return JSON.parse(JSON.stringify(x)); }
+
+  // ---- per-device persistence (localStorage) ----
+  var LS_PREFIX = "tqoonFreightCalc.v1.";
+  function lsGet(key, fallback) {
+    try {
+      var raw = localStorage.getItem(LS_PREFIX + key);
+      if (!raw) return clone(fallback);
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(fallback) && !Array.isArray(parsed)) return clone(fallback);
+      return parsed;
+    } catch (e) { return clone(fallback); }
+  }
+  function lsSet(key, value) {
+    try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(value)); } catch (e) {}
+  }
+
+  // ---- working data (loaded from this browser's storage, else defaults) ----
+  var AIR_RATE_TABLE = lsGet("airTable", DEFAULT_AIR_RATE_TABLE);
+  var OVER30_PER_KG = lsGet("over30", DEFAULT_OVER30_PER_KG);
+  var FUEL_HISTORY = lsGet("fuelHistory", DEFAULT_FUEL_HISTORY);
+  var SEA_HISTORY = lsGet("seaHistory", DEFAULT_SEA_HISTORY);
+  var DELIVERY_TABLE = lsGet("deliveryTable", DEFAULT_DELIVERY_TABLE);
+
+  var editing = { air: false, fuel: false, seaHist: false, delivery: false };
+  var draft = {};
+
+  function calc() {
+    var w = num("w"), d = num("d"), h = num("h"), weight = num("weight");
+    var fx = num("fx"), fuel = num("fuel"), seaRate = num("seaRate");
+
+    var valid = [w,d,h,weight,fx,fuel,seaRate].every(function (v) { return isFinite(v) && v >= 0; })
+      && w > 0 && d > 0 && h > 0 && fx > 0;
+
+    var sizeSum = (w||0) + (d||0) + (h||0);
+    el("sizeReadout").innerHTML = valid
+      ? "사이즈 합계 <b>" + sizeSum.toFixed(1) + " cm</b> (가로+세로+높이)"
+      : "사이즈 합계 — (값을 모두 입력하세요)";
+
+    if (!valid) {
+      el("volWeightReadout").innerHTML = "적용 부피무게 — (CEILING(부피무게, 0.5))";
+      ["airTotal","seaTotal"].forEach(function(id){ el(id).textContent = "—"; });
+      ["airKrw","seaKrw"].forEach(function(id){ el(id).textContent = "값을 입력하세요"; });
+      ["airBase","airFuel","seaBase","seaDelivery","diffVal"].forEach(function(id){ el(id).textContent = "—"; });
+      el("airBadge").style.display = "none";
+      el("seaBadge").style.display = "none";
+      el("airCard").classList.remove("winner");
+      el("seaCard").classList.remove("winner");
+      el("deliveryWarn").classList.remove("show");
+      return;
+    }
+
+    // --- air freight ---
+    var cbm = (w * d * h) / 1000000;
+    var volWeight = (w * d * h) / 5000;
+    var volWeightRounded = ceilHalf(volWeight);
+    var airAppliedWeight = Math.max(weight, volWeightRounded);
+    el("volWeightReadout").innerHTML = "적용 부피무게 <b>" + fmtHalf(volWeightRounded) + " kg</b> (CEILING(" + volWeight.toFixed(1) + ", 0.5))";
+
+    var airBase;
+    if (airAppliedWeight > 30) {
+      var at30 = AIR_RATE_TABLE[AIR_RATE_TABLE.length - 1][1]; // 30kg row
+      airBase = at30 + (airAppliedWeight - 30) * OVER30_PER_KG;
+    } else {
+      var rowWeight = Math.max(0.5, ceilHalf(airAppliedWeight));
+      var row = AIR_RATE_TABLE.find(function (r) { return r[0] === rowWeight; });
+      airBase = row ? row[1] : 0;
+    }
+    var fuelSurcharge = volWeightRounded * fuel;
+    var airTotal = airBase + fuelSurcharge;
+
+    // --- sea freight ---
+    var seaBase = (cbm * seaRate) / fx;
+    var sizeBoundaries = DELIVERY_TABLE.map(function (r) { return r.min; });
+    var sizeIdx = 0;
+    for (var i = 0; i < sizeBoundaries.length; i++) { if (sizeSum >= sizeBoundaries[i]) sizeIdx = i; }
+    var weightIdx = DELIVERY_TABLE.findIndex(function (r) { return weight <= r.limit; });
+    var overLimit = weightIdx === -1;
+    if (overLimit) weightIdx = DELIVERY_TABLE.length - 1;
+    var tierIdx = Math.max(sizeIdx, weightIdx);
+    var tier = DELIVERY_TABLE[tierIdx];
+    var deliveryFee = tier.fee;
+    var seaTotal = seaBase + deliveryFee;
+
+    el("deliveryWarn").classList.toggle("show", overLimit);
+
+    var diff = Math.abs(airTotal - seaTotal);
+
+    // --- render ---
+    el("airTotal").textContent = "¥" + fmtYen.format(Math.round(airTotal));
+    el("seaTotal").textContent = "¥" + fmtYen.format(Math.round(seaTotal));
+    el("airKrw").textContent = "≈ ₩" + fmtWon.format(Math.round(airTotal * fx)) + " (환산)";
+    el("seaKrw").textContent = "≈ ₩" + fmtWon.format(Math.round(seaTotal * fx)) + " (환산)";
+    el("airBase").textContent = "¥" + fmtYen.format(Math.round(airBase));
+    el("airFuel").textContent = "¥" + fmtYen.format(Math.round(fuelSurcharge));
+    el("seaBase").textContent = "¥" + fmtYen.format(Math.round(seaBase));
+    el("seaDelivery").textContent = "¥" + fmtYen.format(deliveryFee);
+    el("diffVal").textContent = "¥" + fmtYen.format(Math.round(diff));
+
+    el("airWeightTag").textContent = "적용무게 " + airAppliedWeight.toFixed(1) + "kg (조회 시 " + rowWeightOrCap(airAppliedWeight) + "kg 기준)";
+    el("airFuelTag").textContent = "부피무게 반올림 " + volWeightRounded.toFixed(1) + "kg × ¥" + fmtYen.format(fuel);
+    el("seaBaseTag").textContent = "CBM " + cbm.toFixed(4) + " × ₩" + fmtWon.format(seaRate) + " ÷ " + fx;
+    el("seaDeliveryTag").textContent = "사이즈 " + tier.label + "cm / 제한중량 " + tier.limit + "kg 구간" + (overLimit ? " (초과)" : "");
+
+    var airWins = airTotal < seaTotal;
+    var seaWins = seaTotal < airTotal;
+    el("airBadge").style.display = airWins ? "inline-block" : "none";
+    el("seaBadge").style.display = seaWins ? "inline-block" : "none";
+    el("airCard").classList.toggle("winner", airWins);
+    el("seaCard").classList.toggle("winner", seaWins);
+
+    highlightHistory(fuel, seaRate);
+  }
+
+  function rowWeightOrCap(appliedWeight) {
+    if (appliedWeight > 30) return 30;
+    return Math.max(0.5, ceilHalf(appliedWeight));
+  }
+
+  function highlightHistory(fuelVal, seaVal) {
+    document.querySelectorAll("#fuelHistoryTable tbody tr").forEach(function (tr, i) {
+      tr.classList.toggle("current", FUEL_HISTORY[i][1] === fuelVal);
+    });
+    document.querySelectorAll("#seaHistoryTable tbody tr").forEach(function (tr, i) {
+      tr.classList.toggle("current", SEA_HISTORY[i][1] === seaVal);
+    });
+  }
+
+  function refreshRateNotes() {
+    var lf = latest(FUEL_HISTORY), ls = latest(SEA_HISTORY);
+    el("fuelNote").textContent = "최신 이력: " + lf[0] + " 기준 ¥" + fmtYen.format(lf[1]) + "/kg";
+    el("seaNote").textContent = "최신 이력: " + ls[0] + " 기준 ₩" + fmtWon.format(ls[1]) + "/CBM";
+  }
+
+  function makeBtn(label, cls, onClick) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "tbl-btn" + (cls ? " " + cls : "");
+    b.textContent = label;
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  // ================= 표1 항공 운임표 =================
+  function renderAir() {
+    var toolbar = el("airToolbar");
+    toolbar.innerHTML = "";
+    el("airMsg").textContent = "";
+    var grid = el("airTableGrid");
+    grid.innerHTML = "";
+
+    if (!editing.air) {
+      toolbar.appendChild(makeBtn("표 편집", "", function () {
+        editing.air = true;
+        draft.air = clone(AIR_RATE_TABLE);
+        draft.airOver30 = OVER30_PER_KG;
+        renderAir();
+      }));
+      AIR_RATE_TABLE.forEach(function (r) {
+        var cell = document.createElement("div");
+        cell.className = "airtable-cell";
+        cell.innerHTML = '<span class="kg">' + r[0] + 'kg</span><span>¥' + fmtYen.format(r[1]) + '</span>';
+        grid.appendChild(cell);
+      });
+      return;
+    }
+
+    // edit mode
+    var over30Wrap = document.createElement("div");
+    over30Wrap.className = "scalar-field";
+    var over30Input = document.createElement("input");
+    over30Input.type = "number"; over30Input.className = "cell-input"; over30Input.style.width = "80px";
+    over30Input.min = "0"; over30Input.step = "1"; over30Input.value = draft.airOver30;
+    over30Input.addEventListener("input", function () { draft.airOver30 = parseFloat(over30Input.value); });
+    over30Wrap.innerHTML = "<span>30kg 초과 시 추가요금(엔/kg)</span>";
+    over30Wrap.appendChild(over30Input);
+    toolbar.appendChild(over30Wrap);
+
+    var spacer = document.createElement("div"); spacer.className = "spacer"; toolbar.appendChild(spacer);
+    toolbar.appendChild(makeBtn("기본값 복원", "danger", function () {
+      if (!confirm("표1을 원본 엑셀 기본값으로 되돌릴까요? 저장 전까지는 되돌리기 취소가 가능합니다.")) return;
+      draft.air = clone(DEFAULT_AIR_RATE_TABLE);
+      draft.airOver30 = DEFAULT_OVER30_PER_KG;
+      renderAir();
+    }));
+    toolbar.appendChild(makeBtn("취소", "", function () { editing.air = false; renderAir(); }));
+    toolbar.appendChild(makeBtn("저장", "primary", function () {
+      if (draft.air.some(function (r) { return !isFinite(r[1]) || r[1] < 0; }) || !isFinite(draft.airOver30) || draft.airOver30 < 0) {
+        el("airMsg").textContent = "모든 금액은 0 이상의 숫자여야 합니다.";
+        return;
+      }
+      AIR_RATE_TABLE = clone(draft.air);
+      OVER30_PER_KG = draft.airOver30;
+      lsSet("airTable", AIR_RATE_TABLE);
+      lsSet("over30", OVER30_PER_KG);
+      editing.air = false;
+      renderAir();
+      calc();
+    }));
+
+    draft.air.forEach(function (r, i) {
+      var cell = document.createElement("div");
+      cell.className = "airtable-cell editing";
+      var input = document.createElement("input");
+      input.type = "number"; input.className = "cell-input"; input.min = "0"; input.step = "1";
+      input.value = r[1];
+      input.addEventListener("input", function () { draft.air[i][1] = parseFloat(input.value); });
+      cell.innerHTML = '<span class="kg">' + r[0] + 'kg</span>';
+      cell.appendChild(input);
+      grid.appendChild(cell);
+    });
+  }
+
+  // ================= 표2/표3 이력표 (날짜, 값) =================
+  function renderHistory(opts) {
+    // opts: {key, editingKey, defaultData, getData, setData, toolbarId, msgId, tableId, unitPrefix, fmt, min, step}
+    var toolbar = el(opts.toolbarId);
+    toolbar.innerHTML = "";
+    el(opts.msgId).textContent = "";
+    var body = document.querySelector("#" + opts.tableId + " tbody");
+    body.innerHTML = "";
+
+    if (!editing[opts.editingKey]) {
+      toolbar.appendChild(makeBtn("표 편집", "", function () {
+        editing[opts.editingKey] = true;
+        draft[opts.key] = clone(opts.getData());
+        renderHistory(opts);
+      }));
+      opts.getData().forEach(function (r) {
+        var tr = document.createElement("tr");
+        tr.innerHTML = "<td>" + r[0] + "</td><td>" + opts.unitPrefix + opts.fmt.format(r[1]) + "</td><td></td>";
+        body.appendChild(tr);
+      });
+      return;
+    }
+
+    var spacer = document.createElement("div"); spacer.className = "spacer";
+    toolbar.appendChild(makeBtn("행 추가", "", function () {
+      draft[opts.key].push(["", 0]);
+      renderHistory(opts);
+    }));
+    toolbar.appendChild(spacer);
+    toolbar.appendChild(makeBtn("기본값 복원", "danger", function () {
+      if (!confirm("기본값(원본 엑셀 이력)으로 되돌릴까요? 저장 전까지는 되돌리기 취소가 가능합니다.")) return;
+      draft[opts.key] = clone(opts.defaultData);
+      renderHistory(opts);
+    }));
+    toolbar.appendChild(makeBtn("취소", "", function () { editing[opts.editingKey] = false; renderHistory(opts); }));
+    toolbar.appendChild(makeBtn("저장", "primary", function () {
+      var rows = draft[opts.key];
+      if (rows.length === 0 || rows.some(function (r) { return !r[0] || !isFinite(r[1]) || r[1] < 0; })) {
+        el(opts.msgId).textContent = "모든 행에 날짜와 0 이상의 값을 입력하세요.";
+        return;
+      }
+      rows.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+      opts.setData(clone(rows));
+      lsSet(opts.key, opts.getData());
+      editing[opts.editingKey] = false;
+      renderHistory(opts);
+      refreshRateNotes();
+      calc();
+    }));
+
+    draft[opts.key].forEach(function (r, i) {
+      var tr = document.createElement("tr");
+      var dateTd = document.createElement("td"); dateTd.className = "edit-cell";
+      var dateInput = document.createElement("input");
+      dateInput.type = "date"; dateInput.className = "cell-input text"; dateInput.value = r[0] || "";
+      dateInput.addEventListener("input", function () { draft[opts.key][i][0] = dateInput.value; });
+      dateTd.appendChild(dateInput);
+
+      var valTd = document.createElement("td"); valTd.className = "edit-cell";
+      var valInput = document.createElement("input");
+      valInput.type = "number"; valInput.className = "cell-input"; valInput.min = opts.min; valInput.step = opts.step;
+      valInput.value = r[1];
+      valInput.addEventListener("input", function () { draft[opts.key][i][1] = parseFloat(valInput.value); });
+      valTd.appendChild(valInput);
+
+      var delTd = document.createElement("td"); delTd.className = "edit-cell";
+      delTd.appendChild(makeBtn("✕", "row-del", function () {
+        draft[opts.key].splice(i, 1);
+        renderHistory(opts);
+      }));
+
+      tr.appendChild(dateTd); tr.appendChild(valTd); tr.appendChild(delTd);
+      body.appendChild(tr);
+    });
+  }
+
+  function renderFuel() {
+    renderHistory({
+      key: "fuelHistory", editingKey: "fuel", defaultData: DEFAULT_FUEL_HISTORY,
+      getData: function () { return FUEL_HISTORY; },
+      setData: function (v) { FUEL_HISTORY = v; },
+      toolbarId: "fuelToolbar", msgId: "fuelMsg", tableId: "fuelHistoryTable",
+      unitPrefix: "¥", fmt: fmtYen, min: "0", step: "1"
+    });
+  }
+  function renderSeaHist() {
+    renderHistory({
+      key: "seaHistory", editingKey: "seaHist", defaultData: DEFAULT_SEA_HISTORY,
+      getData: function () { return SEA_HISTORY; },
+      setData: function (v) { SEA_HISTORY = v; },
+      toolbarId: "seaHistToolbar", msgId: "seaHistMsg", tableId: "seaHistoryTable",
+      unitPrefix: "₩", fmt: fmtWon, min: "0", step: "100"
+    });
+  }
+
+  // ================= 배송료 구간표 =================
+  function renderDelivery() {
+    var toolbar = el("deliveryToolbar");
+    toolbar.innerHTML = "";
+    el("deliveryMsg").textContent = "";
+    var body = document.querySelector("#deliveryTable tbody");
+    body.innerHTML = "";
+
+    if (!editing.delivery) {
+      toolbar.appendChild(makeBtn("표 편집", "", function () {
+        editing.delivery = true;
+        draft.delivery = clone(DELIVERY_TABLE);
+        renderDelivery();
+      }));
+      DELIVERY_TABLE.forEach(function (r) {
+        var tr = document.createElement("tr");
+        tr.innerHTML = "<td>" + r.min + "</td><td>" + r.label + "</td><td>" + r.limit + "kg</td><td>¥" + fmtYen.format(r.fee) + "</td><td></td>";
+        body.appendChild(tr);
+      });
+      return;
+    }
+
+    var spacer = document.createElement("div"); spacer.className = "spacer";
+    toolbar.appendChild(makeBtn("행 추가", "", function () {
+      draft.delivery.push({ label: "", min: 0, limit: 0, fee: 0 });
+      renderDelivery();
+    }));
+    toolbar.appendChild(spacer);
+    toolbar.appendChild(makeBtn("기본값 복원", "danger", function () {
+      if (!confirm("배송료 구간표를 원본 엑셀 기본값으로 되돌릴까요? 저장 전까지는 되돌리기 취소가 가능합니다.")) return;
+      draft.delivery = clone(DEFAULT_DELIVERY_TABLE);
+      renderDelivery();
+    }));
+    toolbar.appendChild(makeBtn("취소", "", function () { editing.delivery = false; renderDelivery(); }));
+    toolbar.appendChild(makeBtn("저장", "primary", function () {
+      var rows = draft.delivery;
+      var bad = rows.length === 0 || rows.some(function (r) {
+        return !r.label || !isFinite(r.min) || r.min < 0 || !isFinite(r.limit) || r.limit < 0 || !isFinite(r.fee) || r.fee < 0;
+      });
+      if (bad) {
+        el("deliveryMsg").textContent = "모든 행에 사이즈 라벨과 0 이상의 하한/제한중량/배송료 값을 입력하세요.";
+        return;
+      }
+      rows.sort(function (a, b) { return a.min - b.min; });
+      DELIVERY_TABLE = clone(rows);
+      lsSet("deliveryTable", DELIVERY_TABLE);
+      editing.delivery = false;
+      renderDelivery();
+      calc();
+    }));
+
+    draft.delivery.forEach(function (r, i) {
+      var tr = document.createElement("tr");
+
+      var minTd = document.createElement("td"); minTd.className = "edit-cell";
+      var minInput = document.createElement("input");
+      minInput.type = "number"; minInput.className = "cell-input"; minInput.min = "0"; minInput.step = "1"; minInput.value = r.min;
+      minInput.addEventListener("input", function () { draft.delivery[i].min = parseFloat(minInput.value); });
+      minTd.appendChild(minInput);
+
+      var labelTd = document.createElement("td"); labelTd.className = "edit-cell";
+      var labelInput = document.createElement("input");
+      labelInput.type = "text"; labelInput.className = "cell-input text"; labelInput.value = r.label;
+      labelInput.addEventListener("input", function () { draft.delivery[i].label = labelInput.value; });
+      labelTd.appendChild(labelInput);
+
+      var limitTd = document.createElement("td"); limitTd.className = "edit-cell";
+      var limitInput = document.createElement("input");
+      limitInput.type = "number"; limitInput.className = "cell-input"; limitInput.min = "0"; limitInput.step = "1"; limitInput.value = r.limit;
+      limitInput.addEventListener("input", function () { draft.delivery[i].limit = parseFloat(limitInput.value); });
+      limitTd.appendChild(limitInput);
+
+      var feeTd = document.createElement("td"); feeTd.className = "edit-cell";
+      var feeInput = document.createElement("input");
+      feeInput.type = "number"; feeInput.className = "cell-input"; feeInput.min = "0"; feeInput.step = "1"; feeInput.value = r.fee;
+      feeInput.addEventListener("input", function () { draft.delivery[i].fee = parseFloat(feeInput.value); });
+      feeTd.appendChild(feeInput);
+
+      var delTd = document.createElement("td"); delTd.className = "edit-cell";
+      var delBtn = makeBtn("✕", "row-del", function () {
+        draft.delivery.splice(i, 1);
+        renderDelivery();
+      });
+      delTd.appendChild(delBtn);
+
+      tr.appendChild(minTd); tr.appendChild(labelTd); tr.appendChild(limitTd); tr.appendChild(feeTd); tr.appendChild(delTd);
+      body.appendChild(tr);
+    });
+  }
+
+  function resetToExample() {
+    el("w").value = 40; el("d").value = 40; el("h").value = 40; el("weight").value = 14;
+    el("fx").value = 9;
+    el("fuel").value = latest(FUEL_HISTORY)[1];
+    el("seaRate").value = formatThousands(latest(SEA_HISTORY)[1]);
+    calc();
+  }
+
+  ["w","d","h","weight","fx","fuel"].forEach(function (id) {
+    el(id).addEventListener("input", calc);
+  });
+  el("seaRate").addEventListener("input", function () {
+    var caretAtEnd = el("seaRate").selectionStart === el("seaRate").value.length;
+    el("seaRate").value = formatThousands(digitsOnly(el("seaRate").value));
+    if (caretAtEnd) {
+      var len = el("seaRate").value.length;
+      el("seaRate").setSelectionRange(len, len);
+    }
+    calc();
+  });
+  el("resetBtn").addEventListener("click", resetToExample);
+
+  renderAir();
+  renderFuel();
+  renderSeaHist();
+  renderDelivery();
+  refreshRateNotes();
+  el("fuel").value = latest(FUEL_HISTORY)[1];
+  el("seaRate").value = formatThousands(latest(SEA_HISTORY)[1]);
+  calc();
+})();
+</script>
