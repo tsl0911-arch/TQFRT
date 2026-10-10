@@ -426,6 +426,7 @@
   }
   th { text-align: right; color: var(--ink-muted); font-weight: 600; font-family: "Noto Sans KR", sans-serif; }
   td:first-child, th:first-child { text-align: left; font-family: "Noto Sans KR", sans-serif; }
+  tr.summary-row td { color: var(--ink-muted); font-weight: 600; background: var(--surface-alt); }
   tr.current td { color: var(--brand); font-weight: 600; }
   tr.current td:first-child::before { content: "● "; }
 
@@ -736,12 +737,12 @@
   ];
   var DEFAULT_OVER30_PER_KG = 250;
 
+  // 2025년은 월별 값 대신 평균만 표시 (엑셀 F29 = AVERAGE(F18:F28) = 132)
+  var FUEL_AVG_2025 = 132;
   var DEFAULT_FUEL_HISTORY = [
-    ["2025-01-01",137],["2025-01-16",131],["2025-02-16",145],["2025-03-16",138],
-    ["2025-04-16",132],["2025-05-16",126],["2025-06-16",115],["2025-07-16",129],
-    ["2025-09-16",128],["2025-11-16",129],["2025-12-16",142],["2026-01-16",129],
-    ["2026-02-16",122],["2026-03-16",135],["2026-04-16",301],["2026-05-16",311],
-    ["2026-06-16",235],["2026-07-16",188],["2026-08-16",220],["2026-09-16",244]
+    ["2026-01-16",129],["2026-02-16",122],["2026-03-16",135],["2026-04-16",301],
+    ["2026-05-16",311],["2026-06-16",235],["2026-07-16",188],["2026-08-16",220],
+    ["2026-09-16",244],["2026-10-16",280]
   ];
 
   var DEFAULT_SEA_HISTORY = [
@@ -799,7 +800,10 @@
   // ---- working data (loaded from this browser's storage, else defaults) ----
   var AIR_RATE_TABLE = lsGet("airTable", DEFAULT_AIR_RATE_TABLE);
   var OVER30_PER_KG = lsGet("over30", DEFAULT_OVER30_PER_KG);
-  var FUEL_HISTORY = lsGet("fuelHistory", DEFAULT_FUEL_HISTORY);
+  var FUEL_HISTORY = lsGet("fuelHistory", DEFAULT_FUEL_HISTORY).filter(function (r) {
+    return r && r[0] >= "2026-01-01"; // 이전에 저장된 2025년 월별 값은 표시하지 않음
+  });
+  if (!FUEL_HISTORY.length) FUEL_HISTORY = clone(DEFAULT_FUEL_HISTORY);
   var SEA_HISTORY = lsGet("seaHistory", DEFAULT_SEA_HISTORY);
   var DELIVERY_TABLE = lsGet("deliveryTable", DEFAULT_DELIVERY_TABLE);
 
@@ -899,11 +903,13 @@
   }
 
   function highlightHistory(fuelVal, seaVal) {
-    document.querySelectorAll("#fuelHistoryTable tbody tr").forEach(function (tr, i) {
-      tr.classList.toggle("current", FUEL_HISTORY[i][1] === fuelVal);
+    document.querySelectorAll("#fuelHistoryTable tbody tr[data-idx]").forEach(function (tr) {
+      var row = FUEL_HISTORY[+tr.dataset.idx];
+      tr.classList.toggle("current", !!row && row[1] === fuelVal);
     });
-    document.querySelectorAll("#seaHistoryTable tbody tr").forEach(function (tr, i) {
-      tr.classList.toggle("current", SEA_HISTORY[i][1] === seaVal);
+    document.querySelectorAll("#seaHistoryTable tbody tr[data-idx]").forEach(function (tr) {
+      var row = SEA_HISTORY[+tr.dataset.idx];
+      tr.classList.toggle("current", !!row && row[1] === seaVal);
     });
   }
 
@@ -1002,14 +1008,26 @@
     var body = document.querySelector("#" + opts.tableId + " tbody");
     body.innerHTML = "";
 
+    // 요약 행 (예: 2025년 평균) — 편집 대상이 아닌 고정 표시 행
+    function appendSummaryRow() {
+      if (!opts.summaryRow) return;
+      var sr = document.createElement("tr");
+      sr.className = "summary-row";
+      sr.innerHTML = "<td>" + opts.summaryRow.label + "</td><td>" + opts.unitPrefix +
+        opts.fmt.format(opts.summaryRow.value) + "</td><td></td>";
+      body.appendChild(sr);
+    }
+
     if (!editing[opts.editingKey]) {
       toolbar.appendChild(makeBtn("표 편집", "", function () {
         editing[opts.editingKey] = true;
         draft[opts.key] = clone(opts.getData());
         renderHistory(opts);
       }));
-      opts.getData().forEach(function (r) {
+      appendSummaryRow();
+      opts.getData().forEach(function (r, i) {
         var tr = document.createElement("tr");
+        tr.dataset.idx = i;
         tr.innerHTML = "<td>" + r[0] + "</td><td>" + opts.unitPrefix + opts.fmt.format(r[1]) + "</td><td></td>";
         body.appendChild(tr);
       });
@@ -1043,6 +1061,7 @@
       calc();
     }));
 
+    appendSummaryRow();
     draft[opts.key].forEach(function (r, i) {
       var tr = document.createElement("tr");
       var dateTd = document.createElement("td"); dateTd.className = "edit-cell";
@@ -1075,7 +1094,8 @@
       getData: function () { return FUEL_HISTORY; },
       setData: function (v) { FUEL_HISTORY = v; },
       toolbarId: "fuelToolbar", msgId: "fuelMsg", tableId: "fuelHistoryTable",
-      unitPrefix: "¥", fmt: fmtYen, min: "0", step: "1"
+      unitPrefix: "¥", fmt: fmtYen, min: "0", step: "1",
+      summaryRow: { label: "2025년 평균", value: FUEL_AVG_2025 }
     });
   }
   function renderSeaHist() {
